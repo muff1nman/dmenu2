@@ -43,7 +43,6 @@ static void run(void);
 static void setup(void);
 static void usage(void);
 static void read_resourses(void);
-
 static char text[BUFSIZ] = "";
 static char originaltext[BUFSIZ] = "";
 static int bh, mw, mh;
@@ -59,6 +58,9 @@ static unsigned int lines = 0, line_height = 0;
 static int xoffset = 0;
 static int yoffset = 0;
 static int width = 0;
+#ifdef XINERAMA
+static int snum = -1;
+#endif
 static ColorSet *normcol;
 static ColorSet *selcol;
 static Atom clip, utf8;
@@ -101,6 +103,7 @@ main(int argc, char *argv[]) {
 			fstrncmp = strncasecmp;
 			fstrstr = cistrstr;
 		}
+
 		else if(!strcmp(argv[i], "-t"))
 			match = matchtok;
 		else if(i+1 == argc)
@@ -116,6 +119,8 @@ main(int argc, char *argv[]) {
 			lines = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-h"))   /* minimum height of single line */
 			line_height = atoi(argv[++i]);
+		else if(!strcmp(argv[i], "-s"))   /* screen number for dmenu to appear in */
+			snum = atoi(argv[++i]);			
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if(!strcmp(argv[i], "-fn"))  /* font or font set */
@@ -693,30 +698,37 @@ setup(void) {
 		Window w, pw, dw, *dws;
 		XWindowAttributes wa;
 
-		XGetInputFocus(dc->dpy, &w, &di);
-		if(w != root && w != PointerRoot && w != None) {
-			/* find top-level window containing current input focus */
-			do {
-				if(XQueryTree(dc->dpy, (pw = w), &dw, &w, &dws, &du) && dws)
-					XFree(dws);
-			} while(w != root && w != pw);
-			/* find xinerama screen with which the window intersects most */
-			if(XGetWindowAttributes(dc->dpy, pw, &wa))
-				for(j = 0; j < n; j++)
-					if((a = INTERSECT(wa.x, wa.y, wa.width, wa.height, info[j])) > area) {
-						area = a;
-						i = j;
-					}
+		if(snum > -1 && snum < n) {
+			x = info[snum].x_org;
+			y = info[snum].y_org + (topbar ? yoffset : info[i].height - mh - yoffset);
+			mw = info[snum].width;
 		}
-		/* no focused window is on screen, so use pointer location instead */
-		if(!area && XQueryPointer(dc->dpy, root, &dw, &dw, &x, &y, &di, &di, &du))
-			for(i = 0; i < n; i++)
-				if(INTERSECT(x, y, 1, 1, info[i]))
-					break;
+		else {
+			XGetInputFocus(dc->dpy, &w, &di);
+			if(w != root && w != PointerRoot && w != None) {
+				/* find top-level window containing current input focus */
+				do {
+					if(XQueryTree(dc->dpy, (pw = w), &dw, &w, &dws, &du) && dws)
+						XFree(dws);
+				} while(w != root && w != pw);
+				/* find xinerama screen with which the window intersects most */
+				if(XGetWindowAttributes(dc->dpy, pw, &wa))
+					for(j = 0; j < n; j++)
+						if((a = INTERSECT(wa.x, wa.y, wa.width, wa.height, info[j])) > area) {
+							area = a;
+							i = j;
+						}
+			}
+			/* no focused window is on screen, so use pointer location instead */
+			if(!area && XQueryPointer(dc->dpy, root, &dw, &dw, &x, &y, &di, &di, &du))
+				for(i = 0; i < n; i++)
+					if(INTERSECT(x, y, 1, 1, info[i]))
+						break;
 
-		x = info[i].x_org;
-		y = info[i].y_org + (topbar ? yoffset : info[i].height - mh - yoffset);
-		mw = info[i].width;
+			x = info[i].x_org;
+			y = info[i].y_org + (topbar ? yoffset : info[i].height - mh - yoffset);
+			mw = info[i].width;
+		}
 		XFree(info);
 	}
 	else
@@ -754,7 +766,7 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-l lines] [-p prompt] [-fn font]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
 	exit(EXIT_FAILURE);
