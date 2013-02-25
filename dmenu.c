@@ -54,6 +54,8 @@ static const char *normbgcolor = NULL;
 static const char *normfgcolor = NULL;
 static const char *selbgcolor  = NULL;
 static const char *selfgcolor  = NULL;
+static char *name = "dmenu";
+static char *class = "Dmenu";
 static unsigned int lines = 0, line_height = 0;
 static int xoffset = 0;
 static int yoffset = 0;
@@ -75,6 +77,10 @@ static Item *matches, *matchend;
 static Item *prev, *curr, *next, *sel;
 static Window win;
 static XIC xic;
+static double opacity = 1.0;
+
+#define OPAQUE 0xffffffff
+#define OPACITY "_NET_WM_WINDOW_OPACITY"
 
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
 static char *(*fstrstr)(const char *, const char *) = strstr;
@@ -120,7 +126,13 @@ main(int argc, char *argv[]) {
 		else if(!strcmp(argv[i], "-h"))   /* minimum height of single line */
 			line_height = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-s"))   /* screen number for dmenu to appear in */
-			snum = atoi(argv[++i]);			
+			snum = atoi(argv[++i]);
+		else if (!strcmp(argv[i], "-name")) /* dmenu window name */
+			name = argv[++i];
+		else if (!strcmp(argv[i], "-class")) /* dmenu window class */
+			class = argv[++i];
+		else if (!strcmp(argv[i], "-o"))  /* opacity */
+			opacity = atof(argv[++i]);
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if(!strcmp(argv[i], "-fn"))  /* font or font set */
@@ -753,6 +765,14 @@ setup(void) {
 	                    DefaultDepth(dc->dpy, screen), CopyFromParent,
 	                    DefaultVisual(dc->dpy, screen),
 	                    CWOverrideRedirect | CWBackPixel | CWEventMask, &swa);
+  XClassHint hint = { .res_name = name, .res_class = class };
+  XSetClassHint(dc->dpy, win, &hint);
+
+  opacity = MIN(MAX(opacity, 0), 1);
+  unsigned int opacity_set = (unsigned int)(opacity * OPAQUE);
+  XChangeProperty(dc->dpy, win, XInternAtom(dc->dpy, OPACITY, False),
+											XA_CARDINAL, 32, PropModeReplace,
+											(unsigned char *) &opacity_set, 1L);
 
 	/* open input methods */
 	xim = XOpenIM(dc->dpy, NULL, NULL, NULL);
@@ -766,7 +786,9 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen] [-l lines] [-p prompt] [-fn font]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen]\n"
+				"             [-name name] [-class class] [ -o opacity]\n"
+				"             [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
 	exit(EXIT_FAILURE);

@@ -10,6 +10,12 @@ dmenu \- dynamic menu
 .RB [ \-t ]
 .RB [ \-s
 .IR screen ]
+.RB [ \-name
+.IR name ]
+.RB [ \-class
+.IR class ]
+.RB [ \-o
+.IR opacity ]
 .RB [ \-l
 .IR lines ]
 .RB [ \-h
@@ -65,6 +71,15 @@ dmenu uses space\-separated tokens to match menu items.
 .TP
 .BI \-s " screen"
 dmenu apears on the specified screen number. Number given corespondes to screen number in X configuration.
+.TP
+.BI \-name " name"
+defines window name for dmenu. Defaults to "dmenu".
+.TP
+.BI \-class " class"
+defines window class for dmenu. Defaults to "Dmenu".
+.TP
+.BI \-o " opacity"
+defines window opacity for dmenu. Defaults to 1.0.
 .TP
 .BI \-l " lines"
 dmenu lists items vertically, with the given number of lines.
