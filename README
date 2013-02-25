@@ -1,8 +1,9 @@
 dmenu - dynamic menu
 ====================
 dmenu is an efficient dynamic menu for X.
-This version is fork of origal dmenu patched with XFT, quiet, x & y, token, follow focus, tab nav, filter.
+This version is fork of original dmenu, patched with XFT, quiet, x & y, token, follow focus, tab nav, filter.
 Also enables options to set screen on which dmenu apperars, as long as opacity, window class and window name.
+
 
 Requirements
 ------------
