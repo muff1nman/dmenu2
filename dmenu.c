@@ -56,6 +56,7 @@ static const char *selbgcolor  = NULL;
 static const char *selfgcolor  = NULL;
 static char *name = "dmenu";
 static char *class = "Dmenu";
+static char *dimname = "dimenu";
 static unsigned int lines = 0, line_height = 0;
 static int xoffset = 0;
 static int yoffset = 0;
@@ -75,9 +76,9 @@ static DC *dc;
 static Item *items = NULL;
 static Item *matches, *matchend;
 static Item *prev, *curr, *next, *sel;
-static Window win;
+static Window win, dim;
 static XIC xic;
-static double opacity = 1.0;
+static double opacity = 1.0, dimopacity = 0.0;
 
 #define OPAQUE 0xffffffff
 #define OPACITY "_NET_WM_WINDOW_OPACITY"
@@ -133,6 +134,8 @@ main(int argc, char *argv[]) {
 			class = argv[++i];
 		else if (!strcmp(argv[i], "-o"))  /* opacity */
 			opacity = atof(argv[++i]);
+		else if (!strcmp(argv[i], "-dim"))  /* dim opacity */
+			dimopacity = atof(argv[++i]);	
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if(!strcmp(argv[i], "-fn"))  /* font or font set */
@@ -688,6 +691,8 @@ run(void) {
 void
 setup(void) {
 	int x, y, screen = DefaultScreen(dc->dpy);
+	Screen *defScreen = DefaultScreenOfDisplay(dc->dpy);
+	int dimx, dimy, dimw, dimh;
 	Window root = RootWindow(dc->dpy, screen);
 	XSetWindowAttributes swa;
 	XIM xim;
@@ -714,6 +719,11 @@ setup(void) {
 			x = info[snum].x_org;
 			y = info[snum].y_org + (topbar ? yoffset : info[i].height - mh - yoffset);
 			mw = info[snum].width;
+			
+			dimx = info[snum].x_org;
+			dimy = info[snum].y_org;
+			dimw = info[snum].width;
+			dimh = info[snum].height;
 		}
 		else {
 			XGetInputFocus(dc->dpy, &w, &di);
@@ -740,6 +750,11 @@ setup(void) {
 			x = info[i].x_org;
 			y = info[i].y_org + (topbar ? yoffset : info[i].height - mh - yoffset);
 			mw = info[i].width;
+
+			dimx = info[i].x_org;
+			dimy = info[i].y_org;
+			dimw = info[i].width;
+			dimh = info[i].height;
 		}
 		XFree(info);
 	}
@@ -749,6 +764,11 @@ setup(void) {
 		x = 0;
 		y = topbar ? 0 : DisplayHeight(dc->dpy, screen) - mh - yoffset;
 		mw = DisplayWidth(dc->dpy, screen);
+		
+		dimx = 0;
+		dimy = 0;
+		dimw = WidthOfScreen(defScreen); 
+		dimh = HeightOfScreen(defScreen);
 	}
 
 	x += xoffset;
@@ -756,9 +776,30 @@ setup(void) {
 	promptw = (prompt && *prompt) ? textw(dc, prompt) : 0;
 	inputw = MIN(inputw, mw/3);
 	match();
-
-	/* create menu window */
+	
 	swa.override_redirect = True;
+	
+	/* create dim window */
+	if(dimopacity > 0) {
+		swa.background_pixel = normcol->BG;
+		swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
+		dim = XCreateWindow(dc->dpy, root, dimx, dimy, dimw, dimh, 0,
+	                    DefaultDepth(dc->dpy, screen), CopyFromParent,
+	                    DefaultVisual(dc->dpy, screen),
+	                    CWOverrideRedirect | CWBackPixel | CWEventMask, &swa);
+		XClassHint dimhint = { .res_name = dimname, .res_class = class };
+  	XSetClassHint(dc->dpy, dim, &dimhint);
+  
+		dimopacity = MIN(MAX(dimopacity, 0), 1);
+  	unsigned int dimopacity_set = (unsigned int)(dimopacity * OPAQUE);
+  	XChangeProperty(dc->dpy, dim, XInternAtom(dc->dpy, OPACITY, False),
+											XA_CARDINAL, 32, PropModeReplace,
+											(unsigned char *) &dimopacity_set, 1L);
+	
+		XMapRaised(dc->dpy, dim);
+	}
+	
+	/* create menu window */
 	swa.background_pixel = normcol->BG;
 	swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
 	win = XCreateWindow(dc->dpy, root, x, y, mw, mh, 0,
@@ -773,7 +814,7 @@ setup(void) {
   XChangeProperty(dc->dpy, win, XInternAtom(dc->dpy, OPACITY, False),
 											XA_CARDINAL, 32, PropModeReplace,
 											(unsigned char *) &opacity_set, 1L);
-
+	
 	/* open input methods */
 	xim = XOpenIM(dc->dpy, NULL, NULL, NULL);
 	xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
@@ -788,7 +829,7 @@ void
 usage(void) {
 	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen]\n"
 				"             [-name name] [-class class] [ -o opacity]\n"
-				"             [-l lines] [-p prompt] [-fn font]\n"
+				"             [-dim opcity] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
 	exit(EXIT_FAILURE);

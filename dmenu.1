@@ -16,6 +16,8 @@ dmenu \- dynamic menu
 .IR class ]
 .RB [ \-o
 .IR opacity ]
+.RB [ \-dim
+.IR opacity ]
 .RB [ \-l
 .IR lines ]
 .RB [ \-h
@@ -82,6 +84,9 @@ defines window class for dmenu. Defaults to "Dmenu".
 .TP
 .BI \-o " opacity"
 defines window opacity for dmenu. Defaults to 1.0.
+.TP
+.BI \-dim " opacity"
+enables screen dimming when dmenu appers. Takes dim opacity as argument.
 .TP
 .BI \-l " lines"
 dmenu lists items vertically, with the given number of lines.
