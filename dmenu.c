@@ -54,6 +54,7 @@ static const char *normbgcolor = NULL;
 static const char *normfgcolor = NULL;
 static const char *selbgcolor  = NULL;
 static const char *selfgcolor  = NULL;
+static const char *dimcolor = NULL; 
 static char *name = "dmenu";
 static char *class = "Dmenu";
 static char *dimname = "dimenu";
@@ -66,6 +67,7 @@ static int snum = -1;
 #endif
 static ColorSet *normcol;
 static ColorSet *selcol;
+static ColorSet *dimcol;
 static Atom clip, utf8;
 static Bool topbar = True;
 static Bool running = True;
@@ -136,6 +138,8 @@ main(int argc, char *argv[]) {
 			opacity = atof(argv[++i]);
 		else if (!strcmp(argv[i], "-dim"))  /* dim opacity */
 			dimopacity = atof(argv[++i]);	
+		else if (!strcmp(argv[i], "-dc")) /* dim color */
+			dimcolor = argv[++i];
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if(!strcmp(argv[i], "-fn"))  /* font or font set */
@@ -156,6 +160,7 @@ main(int argc, char *argv[]) {
 	initfont(dc, font ? font : DEFFONT);
 	normcol = initcolor(dc, normfgcolor, normbgcolor);
 	selcol = initcolor(dc, selfgcolor, selbgcolor);
+	dimcol = initcolor(dc, dimcolor, dimcolor);
 
 	if(fast) {
 		grabkeyboard();
@@ -195,6 +200,8 @@ read_resourses(void) {
 			selfgcolor = strdup(xvalue.addr);
 		if( selbgcolor == NULL && XrmGetResource(xdb, "dmenu.selbackground", "*", datatype, &xvalue) == True )
 			selbgcolor = strdup(xvalue.addr);
+		if( dimcolor == NULL && XrmGetResource(xdb, "dmenu.dimcolor", "*", datatype, &xvalue) == True )
+			dimcolor = strdup(xvalue.addr);
 		XrmDestroyDatabase(xdb);
 	}
 	/* Set default colors if they are not set */
@@ -206,6 +213,8 @@ read_resourses(void) {
 		selbgcolor  = "#005577";
 	if( selfgcolor == NULL )
 		selfgcolor  = "#eeeeee";
+	if( dimcolor == NULL )
+		dimcolor = "#000000";
 }
 
 void
@@ -251,7 +260,9 @@ void
 cleanup(void) {
     freecol(dc, normcol);
     freecol(dc, selcol);
+		freecol(dc, dimcol);
     XDestroyWindow(dc->dpy, win);
+		XDestroyWindow(dc->dpy, dim);
     XUngrabKeyboard(dc->dpy, CurrentTime);
     freedc(dc);
 }
@@ -781,7 +792,7 @@ setup(void) {
 	
 	/* create dim window */
 	if(dimopacity > 0) {
-		swa.background_pixel = normcol->BG;
+		swa.background_pixel = dimcol->BG;
 		swa.event_mask = ExposureMask | KeyPressMask | VisibilityChangeMask;
 		dim = XCreateWindow(dc->dpy, root, dimx, dimy, dimw, dimh, 0,
 	                    DefaultDepth(dc->dpy, screen), CopyFromParent,
@@ -829,7 +840,7 @@ void
 usage(void) {
 	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen]\n"
 				"             [-name name] [-class class] [ -o opacity]\n"
-				"             [-dim opcity] [-l lines] [-p prompt] [-fn font]\n"
+				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
 	exit(EXIT_FAILURE);

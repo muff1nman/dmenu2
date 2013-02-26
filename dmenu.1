@@ -18,6 +18,8 @@ dmenu \- dynamic menu
 .IR opacity ]
 .RB [ \-dim
 .IR opacity ]
+.RB [ \-dc 
+.IR color ]
 .RB [ \-l
 .IR lines ]
 .RB [ \-h
@@ -87,6 +89,9 @@ defines window opacity for dmenu. Defaults to 1.0.
 .TP
 .BI \-dim " opacity"
 enables screen dimming when dmenu appers. Takes dim opacity as argument.
+.TP 
+.BI \-dc " color"
+defines color of screen dimming. Active only when -dim in effect. Defautls to black (#000000)
 .TP
 .BI \-l " lines"
 dmenu lists items vertically, with the given number of lines.
