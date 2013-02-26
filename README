@@ -1,9 +1,8 @@
 dmenu2 - dynamic menu extended
 ==============================
-dmenu2 is the fork of riginal dmenu is an efficient dynamic menu for X.
-It is patched with XFT, quiet, x & y, token, follow focus, tab nav, filter.
+dmenu2 is the fork of riginal dmenu is an efficient dynamic menu for X patched with XFT, quiet, x & y, token, follow focus, tab nav, filter.
 Added option to set screen on which dmenu apperars, as long as opacity, window class and window name.
-Also allows to dim screen while dmenu is running.
+Also allows to dim screen while dmenu2 is running.
 
 
 Requirements

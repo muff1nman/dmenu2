@@ -262,7 +262,8 @@ cleanup(void) {
     freecol(dc, selcol);
 		freecol(dc, dimcol);
     XDestroyWindow(dc->dpy, win);
-		XDestroyWindow(dc->dpy, dim);
+		if(dimopacity > 0)
+			XDestroyWindow(dc->dpy, dim);
     XUngrabKeyboard(dc->dpy, CurrentTime);
     freedc(dc);
 }
