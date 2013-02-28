@@ -398,6 +398,10 @@ drawmenu(void) {
 		drawtext(dc, prompt, selcol);
 		dc->x = dc->w;
 	}
+	if(!imagesize || (imagesize > line_height) || (imagesize > dc->font.height + 2) || (imagesize < 10) ) {
+		imagesize = (line_height > dc->font.height + 2) ? line_height : dc->font.height + 2;
+		imagesize -= 4;
+	}
 	/* draw input field */
 	dc->w = (lines > 0 || !matches) ? mw - dc->x : inputw;
 	drawtext(dc, text, normcol);
@@ -407,7 +411,7 @@ drawmenu(void) {
     if(!quiet || strlen(text) > 0) {    
         if(lines > 0) {
             /* draw vertical list */
-						if (imagesize) dc->x = 4+imagesize;
+						/*if (imagesize) dc->x = 4+imagesize;*/
             dc->w = mw - dc->x;
             for(item = curr; item != next; item = item->right) {
                 dc->y += dc->h;
@@ -972,6 +976,8 @@ void
 run(void) {
 	XEvent ev;
 	int width = 0, height = 0;
+	int im_x_offset = 0;
+	int im_y_offset = 0;
 	char *limg = NULL;
 	
 	while(running && !XNextEvent(dc->dpy, &ev)) {
@@ -1003,8 +1009,11 @@ run(void) {
 			imlib_free_image();
 			image = NULL;
 		}
-		if (image && imagesize) imlib_render_image_on_drawable(4+(imagesize-width)/2,
-				(imagesize-height)/2+dc->font.height*1.2+lines);
+		
+		im_y_offset = (line_height > dc->font.height + 2) ? line_height : dc->font.height + 2;
+		im_y_offset += (im_y_offset - imagesize)/2;
+		im_x_offset = (dc->x - imagesize)/2;
+		if (image && imagesize) imlib_render_image_on_drawable(im_x_offset,im_y_offset);
 		if (sel) limg = sel->image;
 		else limg = NULL;
 	}
