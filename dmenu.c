@@ -86,7 +86,7 @@ static Item *prev, *curr, *next, *sel;
 static Window win, dim;
 static XIC xic;
 static double opacity = 1.0, dimopacity = 0.0;
-static int imagesize = 30;
+static int imagesize = 1;
 static int generatecache = 0;
 static Imlib_Image image = NULL;
 
@@ -402,6 +402,15 @@ drawmenu(void) {
 		imagesize = (line_height > dc->font.height + 2) ? line_height : dc->font.height + 2;
 		imagesize -= 4;
 	}
+	
+	if(prompt && promptw < imagesize)
+		imagesize = MIN(imagesize,promptw);
+
+	if(!prompt && imagesize) {
+		dc->w = imagesize + 4;
+		dc->x = dc->w;
+	}
+
 	/* draw input field */
 	dc->w = (lines > 0 || !matches) ? mw - dc->x : inputw;
 	drawtext(dc, text, normcol);
@@ -1010,9 +1019,11 @@ run(void) {
 			image = NULL;
 		}
 		
-		im_y_offset = (line_height > dc->font.height + 2) ? line_height : dc->font.height + 2;
-		im_y_offset += (im_y_offset - imagesize)/2;
-		im_x_offset = (dc->x - imagesize)/2;
+		if(prompt) {
+			im_y_offset = (line_height > dc->font.height + 2) ? line_height : dc->font.height + 2;
+			im_y_offset += (im_y_offset - imagesize)/2;
+			im_x_offset = (dc->x - imagesize)/2;
+		}
 		if (image && imagesize) imlib_render_image_on_drawable(im_x_offset,im_y_offset);
 		if (sel) limg = sel->image;
 		else limg = NULL;
