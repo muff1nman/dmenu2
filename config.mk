@@ -13,8 +13,8 @@ XINERAMALIBS  = -lXinerama
 XINERAMAFLAGS = -DXINERAMA
 
 # Xft, comment if you don't want it
-XFTINC = -I/usr/include/freetype2
-XFTLIBS  = -lXft -lXrender -lfreetype -lz -lfontconfig
+XFTINC = `pkg-config --cflags imlib2 xft pango pangoxft`
+XFTLIBS  = -lXrender -lfreetype -lz `pkg-config --libs imlib2 xft pango pangoxft`
 
 # includes and libs
 INCS = -I${X11INC} ${XFTINC}

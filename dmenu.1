@@ -47,6 +47,11 @@ is a dynamic menu for X, which reads a list of newline\-separated items from
 stdin.  When the user selects an item and presses Return, their choice is printed
 to stdout and dmenu terminates.  Entering text will narrow the items to those
 matching the tokens in the input.
+
+example pipe listing with images:
+        IMG:/mnt/pictures/lolcat.jpg\\tThis is a lolcat\\n
+        IMG:/mnt/pictures/david.jpg\\tThis is a picture of david\\n
+        This is a item without a picture\\n
 .P
 .B dmenu_run
 is a script used by
@@ -93,6 +98,9 @@ enables screen dimming when dmenu appers. Takes dim opacity as argument.
 .BI \-dc " color"
 defines color of screen dimming. Active only when -dim in effect. Defautls to black (#000000)
 .TP
+.B \-g
+dmenu generates thumbnails to $XDG_DATA_HOME/dmenu/imlib from piped data.
+.TP
 .BI \-l " lines"
 dmenu lists items vertically, with the given number of lines.
 .TP
@@ -128,6 +136,13 @@ defines the selected background color.
 .TP
 .BI \-sf " color"
 defines the selected foreground color.
+.TP
+.BI \-si " selected index"
+hilight specified menu item by index automatically.
+.TP
+.BI \-is " image size"
+image size used for displaying images and generating cached versions.
+if previously used image was cached before with different -is parameter, it gets cached again.
 .TP
 .B \-v
 prints version information to stdout, then exits.
