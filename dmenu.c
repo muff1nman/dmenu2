@@ -37,6 +37,7 @@ static void keypress(XKeyEvent *ev);
 static void matchstr(void);
 static void matchtok(void);
 static size_t nextrune(int inc);
+static size_t utf8length();
 static void paste(void);
 static void readstdin(void);
 static void run(void);
@@ -72,6 +73,8 @@ static Atom clip, utf8;
 static Bool topbar = True;
 static Bool running = True;
 static Bool filter = False;
+static Bool maskin = False;
+static Bool noinput = False;
 static int ret = 0;
 static Bool quiet = False;
 static DC *dc;
@@ -112,6 +115,10 @@ main(int argc, char *argv[]) {
 			fstrncmp = strncasecmp;
 			fstrstr = cistrstr;
 		}
+      else if(!strcmp(argv[i], "-mask")) /* password-style input */
+         maskin = True;
+      else if(!strcmp(argv[i], "-noinput"))
+         noinput = True;
 
 		else if(!strcmp(argv[i], "-t"))
 			match = matchtok;
@@ -162,14 +169,17 @@ main(int argc, char *argv[]) {
 	selcol = initcolor(dc, selfgcolor, selbgcolor);
 	dimcol = initcolor(dc, dimcolor, dimcolor);
 
-	if(fast) {
-		grabkeyboard();
-		readstdin();
-	}
-	else {
-		readstdin();
-		grabkeyboard();
-	}
+   if(noinput) {
+      grabkeyboard();
+   }
+   else if(fast) {
+      grabkeyboard();
+      readstdin();
+   }
+   else {
+      readstdin();
+      grabkeyboard();
+   }
 	setup();
 	run();
 
@@ -268,9 +278,24 @@ cleanup(void) {
     freedc(dc);
 }
 
+const char *
+createmaskinput(char *maskinput, int length)
+{
+   if (length <= 0) {
+      *maskinput = '\0';
+   } else {
+      memset(maskinput, '*', length);
+      maskinput[length] = '\0';
+   }
+
+   return (maskinput);
+}
+
 void
 drawmenu(void) {
 	int curpos;
+   char maskinput[sizeof text];
+   int length = maskin ? utf8length() : cursor;
 	Item *item;
 
 	dc->x = 0;
@@ -283,10 +308,12 @@ drawmenu(void) {
 		drawtext(dc, prompt, selcol);
 		dc->x = dc->w;
 	}
+
+
 	/* draw input field */
 	dc->w = (lines > 0 || !matches) ? mw - dc->x : inputw;
-	drawtext(dc, text, normcol);
-	if((curpos = textnw(dc, text, cursor) + dc->font.height/2) < dc->w)
+	drawtext(dc, maskin ? createmaskinput(maskinput, length) : text, normcol);
+	if((curpos = textnw(dc, maskin ? maskinput : text, length) + dc->font.height/2) < dc->w)
 		drawrect(dc, curpos, (dc->h - dc->font.height)/2 + 1, 1, dc->font.height -1, True, normcol->FG);
 
     if(!quiet || strlen(text) > 0) {    
@@ -407,7 +434,7 @@ keypress(XKeyEvent *ev) {
 	switch(ksym) {
 	default:
 		if(!iscntrl(*buf))
-			insert(buf, len);
+         insert(buf, len);
 		break;
 	case XK_Delete:
 		if(text[cursor] == '\0')
@@ -635,6 +662,22 @@ nextrune(int inc) {
 	return n;
 }
 
+/* UTF-8 length for password */
+size_t
+utf8length()
+{
+   ssize_t n = cursor - 1, length = 0;
+
+   while (n >= 0) {
+      for (; n - 1 >= 0 && (text[n] & 0xc0) == 0x80; n--)
+         ;
+      n--;
+      length++;
+   }
+
+   return (length);
+}
+
 void
 paste(void) {
 	char *p, *q;
@@ -839,7 +882,7 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-s screen]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-mask] [-s screen]\n"
 				"             [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
