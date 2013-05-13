@@ -882,8 +882,8 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-mask] [-s screen]\n"
-				"             [-name name] [-class class] [ -o opacity]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-mask] [-noinput]\n"
+				"             [-s screen] [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
 	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
