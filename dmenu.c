@@ -751,6 +751,7 @@ setup(void) {
 	Window root = RootWindow(dc->dpy, screen);
 	XSetWindowAttributes swa;
 	XIM xim;
+
 #ifdef XINERAMA
 	int n;
 	XineramaScreenInfo *info;
@@ -882,7 +883,7 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-mask] [-noinput]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-t] [-mask] [-noinput]\n"
 				"             [-s screen] [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"

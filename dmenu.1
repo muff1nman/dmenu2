@@ -8,6 +8,8 @@ dmenu \- dynamic menu
 .RB [ \-r ]
 .RB [ \-i ]
 .RB [ \-t ]
+.RB [ \-mask ]
+.RB [ \-noinput ]
 .RB [ \-s
 .IR screen ]
 .RB [ \-name
@@ -74,6 +76,12 @@ dmenu matches menu items case insensitively.
 .TP
 .B \-t
 dmenu uses space\-separated tokens to match menu items.
+.TP
+.B \-mask
+dmenu masks input with asterisk characters (*).
+.TP
+.B \-noinput
+dmenu ignores input from stdin (equivalent to: echo | dmenu).
 .TP
 .BI \-s " screen"
 dmenu apears on the specified screen number. Number given corespondes to screen number in X configuration.
