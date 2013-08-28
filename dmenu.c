@@ -212,6 +212,8 @@ read_resourses(void) {
 			selbgcolor = strdup(xvalue.addr);
 		if( dimcolor == NULL && XrmGetResource(xdb, "dmenu.dimcolor", "*", datatype, &xvalue) == True )
 			dimcolor = strdup(xvalue.addr);
+		if( XrmGetResource(xdb, "dmenu.opacity", "*", datatype, &xvalue) == True )
+			opacity = atof(strdup(xvalue.addr));
 		XrmDestroyDatabase(xdb);
 	}
 	/* Set default colors if they are not set */
@@ -225,6 +227,8 @@ read_resourses(void) {
 		selfgcolor  = "#eeeeee";
 	if( dimcolor == NULL )
 		dimcolor = "#000000";
+	if( !opacity )
+		opacity = 1.0;
 }
 
 void
