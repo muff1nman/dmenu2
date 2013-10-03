@@ -135,8 +135,10 @@ main(int argc, char *argv[]) {
 			lines = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-h"))   /* minimum height of single line */
 			line_height = atoi(argv[++i]);
+		#ifdef XINERAMA
 		else if(!strcmp(argv[i], "-s"))   /* screen number for dmenu to appear in */
 			snum = atoi(argv[++i]);
+		#endif
 		else if (!strcmp(argv[i], "-name")) /* dmenu window name */
 			name = argv[++i];
 		else if (!strcmp(argv[i], "-class")) /* dmenu window class */
