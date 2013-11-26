@@ -36,6 +36,8 @@ static void insert(const char *str, ssize_t n);
 static void keypress(XKeyEvent *ev);
 static void matchstr(void);
 static void matchtok(void);
+static void matchfuzzy(void);
+static char *strchri(const char *s, int c);
 static size_t nextrune(int inc);
 static size_t utf8length();
 static void paste(void);
@@ -91,6 +93,7 @@ static double opacity = 1.0, dimopacity = 0.0;
 static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
 static char *(*fstrstr)(const char *, const char *) = strstr;
 static void (*match)(void) = matchstr;
+static char *(*fstrchr)(const char *, const int) = strchr;
 
 int
 main(int argc, char *argv[]) {
@@ -109,11 +112,14 @@ main(int argc, char *argv[]) {
  			quiet = True;
 		else if(!strcmp(argv[i], "-f"))   /* grabs keyboard before reading stdin */
 			fast = True;
+		else if(!strcmp(argv[i], "-z"))   /* enable fuzzy matching */
+			match = matchfuzzy;
  		else if(!strcmp(argv[i], "-r"))
  			filter = True;
 		else if(!strcmp(argv[i], "-i")) { /* case-insensitive item matching */
 			fstrncmp = strncasecmp;
 			fstrstr = cistrstr;
+			fstrchr = strchri;
 		}
       else if(!strcmp(argv[i], "-mask")) /* password-style input */
          maskin = True;
@@ -578,6 +584,22 @@ keypress(XKeyEvent *ev) {
 	drawmenu();
 }
 
+char *
+strchri(const char *s, int c) {
+	char *u, *l;
+	if(!isalpha(c)) return strchr(s, c);
+	if(isupper(c)) {
+		u = strchr(s, c);
+		l = strchr(s, tolower(c));
+	}
+	else {
+		l = strchr(s, c);
+		u = strchr(s, toupper(c));
+	}
+}
+
+
+
 void
 matchstr(void) {
 	static char **tokv = NULL;
@@ -656,6 +678,25 @@ matchtok(void) {
 	}
 	free(tokv);
 	curr = prev = next = sel = matches;
+	calcoffsets();
+}
+
+void
+matchfuzzy(void) {
+	int i;
+	size_t len;
+	Item *item;
+	char *pos;
+	
+	len = strlen(text);
+	matches = matchend = NULL;
+	for(item = items; item && item->text; item++) {
+		i = 0;
+		for(pos = fstrchr(item->text, text[i]); pos && text[i]; i++, pos = fstrchr(pos+1, text[i]));
+		if(i == len) appenditem(item, &matches, &matchend);
+	}
+
+	curr = sel = matches;
 	calcoffsets();
 }
 
@@ -889,7 +930,7 @@ setup(void) {
 
 void
 usage(void) {
-	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-t] [-mask] [-noinput]\n"
+	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-z] [-t] [-mask] [-noinput]\n"
 				"             [-s screen] [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"

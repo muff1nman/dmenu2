@@ -7,6 +7,7 @@ dmenu \- dynamic menu
 .RB [ \-f ]
 .RB [ \-r ]
 .RB [ \-i ]
+.RB [ \-z ]
 .RB [ \-t ]
 .RB [ \-mask ]
 .RB [ \-noinput ]
@@ -74,8 +75,14 @@ beginning of the list.
 .B \-i
 dmenu matches menu items case insensitively.
 .TP
+.B \-z
+dmenu uses fuzzy matching. It matches items that have all characters entered, in sequence they are
+entered, but there may be any number of characters between matched characters.
+For example it takes "txt" makes it to "*t*x*t" glob pattern and checks if it
+matches.
+.TP
 .B \-t
-dmenu uses space\-separated tokens to match menu items.
+dmenu uses space\-separated tokens to match menu items. Using this overrides -z option.
 .TP
 .B \-mask
 dmenu masks input with asterisk characters (*).
