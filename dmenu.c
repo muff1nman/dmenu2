@@ -58,10 +58,11 @@ static const char *normfgcolor = NULL;
 static const char *selbgcolor  = NULL;
 static const char *selfgcolor  = NULL;
 static const char *dimcolor = NULL; 
+static const char *undercolor = NULL;
 static char *name = "dmenu";
 static char *class = "Dmenu";
 static char *dimname = "dimenu";
-static unsigned int lines = 0, line_height = 0;
+static unsigned int lines = 0, line_height = 0, under_height = 0;
 static int xoffset = 0;
 static int yoffset = 0;
 static int width = 0;
@@ -71,6 +72,7 @@ static int snum = -1;
 static ColorSet *normcol;
 static ColorSet *selcol;
 static ColorSet *dimcol;
+static ColorSet *undercol;
 static Atom clip, utf8;
 static Bool topbar = True;
 static Bool running = True;
@@ -141,6 +143,8 @@ main(int argc, char *argv[]) {
 			lines = atoi(argv[++i]);
 		else if(!strcmp(argv[i], "-h"))   /* minimum height of single line */
 			line_height = atoi(argv[++i]);
+		else if(!strcmp(argv[i], "-uh"))   /* height of underline */
+			under_height = atoi(argv[++i]);
 		#ifdef XINERAMA
 		else if(!strcmp(argv[i], "-s"))   /* screen number for dmenu to appear in */
 			snum = atoi(argv[++i]);
@@ -155,6 +159,8 @@ main(int argc, char *argv[]) {
 			dimopacity = atof(argv[++i]);	
 		else if (!strcmp(argv[i], "-dc")) /* dim color */
 			dimcolor = argv[++i];
+		else if (!strcmp(argv[i], "-uc")) /* underline color */
+			undercolor = argv[++i];
 		else if(!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
 		else if(!strcmp(argv[i], "-fn"))  /* font or font set */
@@ -176,6 +182,7 @@ main(int argc, char *argv[]) {
 	normcol = initcolor(dc, normfgcolor, normbgcolor);
 	selcol = initcolor(dc, selfgcolor, selbgcolor);
 	dimcol = initcolor(dc, dimcolor, dimcolor);
+	undercol = initcolor(dc, undercolor, undercolor);
 
    if(noinput) {
       grabkeyboard();
@@ -220,6 +227,9 @@ read_resourses(void) {
 			selbgcolor = strdup(xvalue.addr);
 		if( dimcolor == NULL && XrmGetResource(xdb, "dmenu.dimcolor", "*", datatype, &xvalue) == True )
 			dimcolor = strdup(xvalue.addr);
+		if( undercolor == NULL && XrmGetResource(xdb, "dmenu.undercolor", "*", datatype, &xvalue) == True )
+			undercolor = strdup(xvalue.addr);
+
 		if( XrmGetResource(xdb, "dmenu.opacity", "*", datatype, &xvalue) == True )
 			opacity = atof(strdup(xvalue.addr));
 		XrmDestroyDatabase(xdb);
@@ -235,6 +245,8 @@ read_resourses(void) {
 		selfgcolor  = "#eeeeee";
 	if( dimcolor == NULL )
 		dimcolor = "#000000";
+	if (undercolor == NULL)
+		undercolor = selbgcolor;
 	if( !opacity )
 		opacity = 1.0;
 }
@@ -318,6 +330,7 @@ drawmenu(void) {
 	if(prompt && *prompt) {
 		dc->w = promptw;
 		drawtext(dc, prompt, selcol);
+		drawrect(dc, 0, dc->h-under_height, dc->w, under_height, True, undercol->BG);
 		dc->x = dc->w;
 	}
 
@@ -327,6 +340,7 @@ drawmenu(void) {
 	drawtext(dc, maskin ? createmaskinput(maskinput, length) : text, normcol);
 	if((curpos = textnw(dc, maskin ? maskinput : text, length) + dc->font.height/2) < dc->w)
 		drawrect(dc, curpos, (dc->h - dc->font.height)/2 + 1, 1, dc->font.height -1, True, normcol->FG);
+
 
     if(!quiet || strlen(text) > 0) {    
         if(lines > 0) {
@@ -347,6 +361,9 @@ drawmenu(void) {
                 dc->x += dc->w;
                 dc->w = MIN(textw(dc, item->text), mw - dc->x - textw(dc, ">"));
                 drawtext(dc, item->text, (item == sel) ? selcol : normcol);
+                if (item == sel)
+                	drawrect(dc, 0, dc->h-under_height, dc->w, under_height, True, undercol->BG);
+
             }
             dc->w = textw(dc, ">");
             dc->x = mw - dc->w;
@@ -933,7 +950,7 @@ usage(void) {
 	fputs("usage: dmenu [-b] [-q] [-f] [-r] [-i] [-z] [-t] [-mask] [-noinput]\n"
 				"             [-s screen] [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
-	      "             [-x xoffset] [-y yoffset] [-h height] [-w width]\n"
-	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-v]\n", stderr);
+	      "             [-x xoffset] [-y yoffset] [-h height] [-w width] [-uh height]\n"
+	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-uc color] [-v]\n", stderr);
 	exit(EXIT_FAILURE);
 }

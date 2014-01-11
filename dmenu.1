@@ -27,6 +27,8 @@ dmenu \- dynamic menu
 .IR lines ]
 .RB [ \-h
 .IR height ]
+.RB [ \-uh
+.IR height ]
 .RB [ \-w
 .IR width ]
 .RB [ \-p
@@ -40,6 +42,8 @@ dmenu \- dynamic menu
 .RB [ \-sb
 .IR color ]
 .RB [ \-sf
+.IR color ]
+.RC [ \-uc
 .IR color ]
 .RB [ \-v ]
 .P
@@ -114,6 +118,9 @@ dmenu lists items vertically, with the given number of lines.
 .BI \-h " height"
 defines the height of the bar in pixels.
 .TP
+.BI \-uh " height"
+defines the height of the underline in pixels.
+.TP
 .BI \-p " prompt"
 defines the prompt to be displayed to the left of the input field.
 .TP
@@ -143,6 +150,9 @@ defines the selected background color.
 .TP
 .BI \-sf " color"
 defines the selected foreground color.
+.TP
+.BI \-uc " color"
+defines the underline color.
 .TP
 .B \-v
 prints version information to stdout, then exits.
