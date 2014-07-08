@@ -20,11 +20,20 @@
 #define MAX(a,b)              ((a) > (b) ? (a) : (b))
 #define DEFFONT "fixed" /* xft example: "Monospace-11" */
 #define HIST_SIZE 20
+#define HIST_LINE_LEN 1024
 
 typedef struct Item Item;
 struct Item {
 	char *text;
 	Item *left, *right;
+};
+
+struct item_state {
+  char buf[BUFSIZ];
+  char *max_str;
+  size_t max_len;
+  size_t size;
+  size_t items;
 };
 
 static void appenditem(Item *item, Item **list, Item **last);
@@ -89,7 +98,7 @@ static Item *prev, *curr, *next, *sel;
 static Window win, dim;
 static XIC xic;
 static double opacity = 1.0, dimopacity = 0.0;
-static char hist[HIST_SIZE][1024];
+static char hist[HIST_SIZE][HIST_LINE_LEN];
 static char *histfile = NULL;
 static int hcnt = 0;
 
@@ -794,44 +803,63 @@ paste(void) {
 	drawmenu();
 }
 
+/* Return either length, or -1 for failure */
+size_t
+readitem(FILE *fd, struct item_state *s) {
+  char *p;
+  size_t len = -1;
+
+  if (fgets(s->buf, BUFSIZ, fd)) {
+    if (s->items + 1 >= s->size / sizeof *items) {
+      if (!(items = realloc(items, (s->size += BUFSIZ)))) {
+        eprintf("cannot realloc %u bytes:", s->size);
+      }
+    }
+
+    if((p = strchr(s->buf, '\n'))) {
+		  *p = '\0';
+    }
+
+    len = strlen(s->buf);
+
+    if (!(items[s->items].text = strdup(s->buf))) {
+		  eprintf("cannot strdup %u bytes:", len + 1);
+    }
+
+    if(len > s->max_len) {
+      s->max_len = len;
+      s->max_str = items[s->items].text;
+    }
+
+    s->items++;
+  }
+
+  return len;
+}
+
 void
 readitems(void) {
-	char buf[sizeof text], *p, *maxstr = NULL;
-	size_t i=0, max = 0, size = 0;
-	FILE *f;
+  struct item_state s;
+  FILE *f;
+  size_t len = 0;
 
-	if(histfile && (f = fopen(histfile, "r"))) {
-        for(; fgets(buf, sizeof buf, f); i++) {
-		    if(i+1 >= size / sizeof *items)
-		   		if(!(items = realloc(items, (size += BUFSIZ))))
-		   			eprintf("cannot realloc %u bytes:", size);
-			if((p = strchr(buf, '\n')))
-				*p = '\0';
-		    if(!(items[i].text = strdup(buf)))
-			    eprintf("cannot strdup %u bytes:", strlen(buf)+1);
-		    if(strlen(items[i].text) > max)
-			    max = strlen(maxstr = items[i].text);
-			strncpy(hist[hcnt++], buf, (strlen(buf) <= 1024) ? strlen(buf): 1024 );
-        }
-		fclose(f);
-	}
+  bzero(&s, sizeof s);
 
-	/* read each line from stdin and add it to the item list */
-	for(; fgets(buf, sizeof buf, stdin); i++) {
-		if(i+1 >= size / sizeof *items)
-			if(!(items = realloc(items, (size += BUFSIZ))))
-				eprintf("cannot realloc %u bytes:", size);
-		if((p = strchr(buf, '\n')))
-			*p = '\0';
-		if(!(items[i].text = strdup(buf)))
-			eprintf("cannot strdup %u bytes:", strlen(buf)+1);
-		if(strlen(items[i].text) > max)
-			max = strlen(maxstr = items[i].text);
-	}
-	if(items)
-		items[i].text = NULL;
-	inputw = maxstr ? textw(dc, maxstr) : 0;
-	lines = MIN(lines, i);
+  if (histfile && (f = fopen(histfile, "r"))) {
+    while ((len = readitem(f, &s)) != (size_t)-1) {
+      strncpy(hist[hcnt], s.buf, MIN(len, HIST_LINE_LEN - 1));
+      hist[hcnt++][HIST_LINE_LEN - 1] = '\0';
+    }
+    fclose(f);
+  }
+
+  /* read each line from stdin and add it to the item list */
+  while(readitem(stdin, &s) != (size_t)-1);
+
+  if(items)
+    items[s.items].text = NULL;
+  inputw = s.max_str ? textw(dc, s.max_str) : 0;
+  lines = MIN(lines, s.items);
 }
 
 void
