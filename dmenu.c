@@ -797,11 +797,11 @@ paste(void) {
 void
 readitems(void) {
 	char buf[sizeof text], *p, *maxstr = NULL;
-	size_t i, max = 0, size = 0;
+	size_t i=0, max = 0, size = 0;
 	FILE *f;
 
 	if(histfile && (f = fopen(histfile, "r"))) {
-        for(i = 0; fgets(buf, sizeof buf, f); i++) {
+        for(; fgets(buf, sizeof buf, f); i++) {
 		    if(i+1 >= size / sizeof *items)
 		   		if(!(items = realloc(items, (size += BUFSIZ))))
 		   			eprintf("cannot realloc %u bytes:", size);
