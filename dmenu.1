@@ -45,6 +45,8 @@ dmenu \- dynamic menu
 .IR color ]
 .RC [ \-uc
 .IR color ]
+.RB [ \-hist
+.IR "<filename>" ]
 .RB [ \-v ]
 .P
 .BR dmenu_run " ..."
@@ -153,6 +155,9 @@ defines the selected foreground color.
 .TP
 .BI \-uc " color"
 defines the underline color.
+.TP
+.BI \-hist " <histfile>"
+the file to use for history
 .TP
 .B \-v
 prints version information to stdout, then exits.

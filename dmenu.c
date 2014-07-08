@@ -19,6 +19,7 @@
 #define MIN(a,b)              ((a) < (b) ? (a) : (b))
 #define MAX(a,b)              ((a) > (b) ? (a) : (b))
 #define DEFFONT "fixed" /* xft example: "Monospace-11" */
+#define HIST_SIZE 20
 
 typedef struct Item Item;
 struct Item {
@@ -41,7 +42,7 @@ static char *strchri(const char *s, int c);
 static size_t nextrune(int inc);
 static size_t utf8length();
 static void paste(void);
-static void readstdin(void);
+static void readitems(void);
 static void run(void);
 static void setup(void);
 static void usage(void);
@@ -88,6 +89,9 @@ static Item *prev, *curr, *next, *sel;
 static Window win, dim;
 static XIC xic;
 static double opacity = 1.0, dimopacity = 0.0;
+static char hist[HIST_SIZE][1024];
+static char *histfile = NULL;
+static int hcnt = 0;
 
 #define OPAQUE 0xffffffff
 #define OPACITY "_NET_WM_WINDOW_OPACITY"
@@ -108,6 +112,8 @@ main(int argc, char *argv[]) {
 			puts("dmenu-"VERSION", © 2006-2012 dmenu engineers, see LICENSE for details");
 			exit(EXIT_SUCCESS);
 		}
+		else if(!strcmp(argv[i], "-hist"))
+			histfile = argv[++i];
 		else if(!strcmp(argv[i], "-b"))   /* appears at the bottom of the screen */
 			topbar = False;
  		else if(!strcmp(argv[i], "-q"))
@@ -189,10 +195,10 @@ main(int argc, char *argv[]) {
    }
    else if(fast) {
       grabkeyboard();
-      readstdin();
+      readitems();
    }
    else {
-      readstdin();
+      readitems();
       grabkeyboard();
    }
 	setup();
@@ -201,6 +207,33 @@ main(int argc, char *argv[]) {
 	cleanup();
 	return ret;
 }
+
+
+static int
+writehistory(char *command) {
+	int i = 0;
+	FILE *f;
+
+	if(!histfile || strlen(command) <= 0)
+		return 0;
+
+	if((f = fopen(histfile, "w"))) {
+		fputs(command, f);
+		fputc('\n', f);
+		for(; i < hcnt; i++) {
+			if(strcmp(command, hist[i]) != 0) {
+				fputs(hist[i], f);
+				fputc('\n', f);
+			}
+		}
+		fclose(f);
+		return 1;
+	}
+
+	return 0;
+}
+
+
 
 /* Set font and colors from X resources database if they are not set
  * from command line */
@@ -530,10 +563,14 @@ keypress(XKeyEvent *ev) {
 		break;
 	case XK_Return:
 	case XK_KP_Enter:
- 		if((ev->state & ShiftMask) || !sel)
+ 		if((ev->state & ShiftMask) || !sel){
  			puts(text);
- 		else if(!filter)
+ 			writehistory(text);
+ 		}
+ 		else if(!filter){
  			puts(sel->text);
+ 			writehistory(sel->text);
+ 		}
  		else {
  			for(Item *item = sel; item; item = item->right)
  				puts(item->text);
@@ -758,12 +795,29 @@ paste(void) {
 }
 
 void
-readstdin(void) {
+readitems(void) {
 	char buf[sizeof text], *p, *maxstr = NULL;
 	size_t i, max = 0, size = 0;
+	FILE *f;
+
+	if(histfile && (f = fopen(histfile, "r"))) {
+        for(i = 0; fgets(buf, sizeof buf, f); i++) {
+		    if(i+1 >= size / sizeof *items)
+		   		if(!(items = realloc(items, (size += BUFSIZ))))
+		   			eprintf("cannot realloc %u bytes:", size);
+			if((p = strchr(buf, '\n')))
+				*p = '\0';
+		    if(!(items[i].text = strdup(buf)))
+			    eprintf("cannot strdup %u bytes:", strlen(buf)+1);
+		    if(strlen(items[i].text) > max)
+			    max = strlen(maxstr = items[i].text);
+			strncpy(hist[hcnt++], buf, (strlen(buf) <= 1024) ? strlen(buf): 1024 );
+        }
+		fclose(f);
+	}
 
 	/* read each line from stdin and add it to the item list */
-	for(i = 0; fgets(buf, sizeof buf, stdin); i++) {
+	for(; fgets(buf, sizeof buf, stdin); i++) {
 		if(i+1 >= size / sizeof *items)
 			if(!(items = realloc(items, (size += BUFSIZ))))
 				eprintf("cannot realloc %u bytes:", size);
@@ -951,6 +1005,6 @@ usage(void) {
 				"             [-s screen] [-name name] [-class class] [ -o opacity]\n"
 				"             [-dim opcity] [-dc color] [-l lines] [-p prompt] [-fn font]\n"
 	      "             [-x xoffset] [-y yoffset] [-h height] [-w width] [-uh height]\n"
-	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-uc color] [-v]\n", stderr);
+	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-uc color] [-hist histfile] [-v]\n", stderr);
 	exit(EXIT_FAILURE);
 }
